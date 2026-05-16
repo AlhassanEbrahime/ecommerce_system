@@ -23,6 +23,7 @@ A relational database schema for an e-commerce platform, with PostgreSQL and MyS
 | [Task 5: Create Sale History Trigger Function](#task-5-create-sale-history-trigger-function) | Builds a PostgreSQL trigger function that inserts sale history rows. |
 | [Task 6: Create Trigger](#task-6-create-trigger) | Attaches the sale history trigger to `ORDER_DETAILS`. |
 | [Task 7: Test the Trigger](#task-7-test-the-trigger) | Inserts sample order data and verifies that sale history is created. |
+| [Task 8: Lock Product Quantity and Row](#task-8-lock-product-quantity-and-row) | Uses transactions to prevent concurrent updates to product ID 211. |
 
 ---
 
@@ -825,3 +826,49 @@ This implementation provides:
 - performance indexes
 - automatic sale history creation using triggers
 - test insert statements
+
+### Task 8: Lock Product Quantity and Row
+
+#### Objective
+
+Use a transaction to lock product ID 211 so other transactions cannot update it until the current transaction is committed or rolled back.
+
+SQL databases such as PostgreSQL and MySQL lock rows, not a single field independently. Selecting only `STOCK_QTY` targets the quantity value in the query result, but the lock is still applied to the product row.
+
+#### Lock the Quantity Field for Product ID 211
+
+```sql
+BEGIN;
+
+SELECT STOCK_QTY
+FROM PRODUCT
+WHERE PRODUCT_ID = 211
+FOR UPDATE;
+
+-- Any needed quantity logic can run here while the row is locked.
+
+COMMIT;
+```
+
+#### Lock the Full Product Row for Product ID 211
+
+```sql
+BEGIN;
+
+SELECT *
+FROM PRODUCT
+WHERE PRODUCT_ID = 211
+FOR UPDATE;
+
+-- Any update to this product row by another transaction waits until COMMIT or ROLLBACK.
+
+COMMIT;
+```
+
+#### Rollback Option
+
+Use `ROLLBACK` instead of `COMMIT` if the transaction should be canceled:
+
+```sql
+ROLLBACK;
+```
